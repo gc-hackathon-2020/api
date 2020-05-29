@@ -11,22 +11,6 @@ namespace HackathonApi.Controllers
     [Route("[controller]")]
     public class PrivateMessageController : ControllerBase
     {
-        [HttpPost]
-        public CreateAccountResponseModel Post(CreateAccountRequestModel model)
-        {
-            CreateAccountResponseModel response = null;
-            try
-            {
-
-            }
-            catch (Exception ex)
-            {
-                response.IsSuccess = false;
-                response.ErrorMessage = "Failed to create new account";
-                _logger.LogError(ex.ToString());
-            }
-
-            return response;
-        }
+      
     }
 }
