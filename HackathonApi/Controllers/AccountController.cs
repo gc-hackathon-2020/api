@@ -16,7 +16,7 @@ using Auth0.ManagementApi.Models;
 namespace HackathonApi.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class AccountController : ControllerBase
     {
         private readonly ILogger<AccountController> _logger;
@@ -28,38 +28,49 @@ namespace HackathonApi.Controllers
             _logger = logger;
             _configuration = configuration;
 
-          
+
         }
 
         [HttpPost]
-        public CreateAccountResponseModel Post(CreateAccountRequestModel model)
+        public async Task<CreateAccountResponseModel> Post(CreateAccountRequestModel model)
         {
-            CreateAccountResponseModel responseModel = null;
-           
+            CreateAccountResponseModel responseModel = new CreateAccountResponseModel();
+
             try
             {
-              
 
                 string token = _configuration.GetSection("Auth0").GetSection("Token").Value;
                 string url = _configuration.GetSection("Auth0").GetSection("Url").Value;
-                url += "users";
-                using (var client = new ManagementApiClient(token, new Uri(url)))
+                Dictionary<string, string> metadata = new Dictionary<string, string>();
+                metadata.Add("DeviceID", model.DeviceId);
+
+                using var client = new ManagementApiClient(token, new Uri(url));
+                var response = await client.Users.CreateAsync(new UserCreateRequest
                 {
-                    var response = client.Users.CreateAsync(new UserCreateRequest
-                    {
-                        Connection = "Username-Password-Authentication",
-                        Email = model.Email,
-                        Password = model.Password,
-                        FirstName = model.FirstName,
-                        LastName = model.LastName,
-                    }).Result;
- 
+                    Connection = "Username-Password-Authentication",
+                    Email = model.Email,
+                    Password = model.Password,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    UserMetadata = metadata
+                });
+
+                if (!String.IsNullOrEmpty(response.UserId))
+                {
+                    responseModel.IsSuccess = true;
+                    responseModel.ErrorMessage = string.Empty;
+                    responseModel.UserId = response.UserId;
+
+                }
+                else
+                {
+                    responseModel.ErrorMessage = "Failed to create new user";
                 }
             }
             catch (Exception ex)
             {
                 responseModel.IsSuccess = false;
-                responseModel.ErrorMessage = "Failed to create new account";
+                responseModel.ErrorMessage = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
                 _logger.LogError(ex.ToString());
             }
 
